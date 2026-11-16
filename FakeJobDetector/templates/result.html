@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}Result - {{ result }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="result-container">
+        <div class="glass-card p-5 text-center position-relative overflow-hidden">
+            <!-- Background Glow -->
+            <div class="position-absolute top-0 start-50 translate-middle w-100 h-100"
+                style="background: radial-gradient(circle, {% if result == 'REAL' %}rgba(0, 210, 160, 0.15){% else %}rgba(255, 107, 107, 0.15){% endif %}, transparent 70%); z-index: 0;">
+            </div>
+
+            <div style="position: relative; z-index: 1;">
+                <!-- Result Icon -->
+                <div class="result-icon {{ result|lower }} mb-3">
+                    {% if result == 'REAL' %}
+                    <i class="bi bi-shield-check" style="font-size: 5rem;"></i>
+                    {% else %}
+                    <i class="bi bi-shield-exclamation" style="font-size: 5rem; animation: pulse 2s infinite;"></i>
+                    {% endif %}
+                </div>
+
+                <!-- Verdict -->
+                <h1 class="result-verdict {{ result|lower }} mb-2" style="font-size: 3rem;">
+                    {{ result }} JOB POSTING
+                </h1>
+
+                <div class="d-flex justify-content-center gap-3 mt-3 mb-4">
+                    <span class="badge rounded-pill bg-dark border border-secondary px-3 py-2 fs-6">
+                        <i class="bi bi-bullseye me-2" style="color: var(--accent-light);"></i>Confidence: {{
+                        "%.1f"|format(confidence) }}%
+                    </span>
+                    <span
+                        class="badge rounded-pill bg-dark border {% if risk_percentage > 50 %}border-danger text-danger{% else %}border-success text-success{% endif %} px-3 py-2 fs-6">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Risk Score: {{ "%.1f"|format(risk_percentage) }}%
+                    </span>
+                </div>
+
+                <p class="text-muted mb-4 fs-5">
+                    {% if result == 'REAL' %}
+                    This job posting appears to be legitimate and authentic based on our AI analysis.
+                    {% else %}
+                    ⚠️ Warning: This job posting exhibits patterns strongly associated with known scams.
+                    {% endif %}
+                </p>
+
+                <!-- 🤖 Explainable Chatbot CTA -->
+                <div class="mt-4 mb-5 p-4 rounded-4"
+                    style="background: rgba(108, 99, 255, 0.08); border: 1px solid rgba(108, 99, 255, 0.2);">
+                    <h5 class="mb-3 text-white"><i class="bi bi-robot me-2"></i>Want to know why we made this decision?
+                    </h5>
+                    <p class="text-muted mb-4">Our Explainable AI can chat with you and break down the exact reasons,
+                        keywords, and patterns that led to this result.</p>
+                    <a href="{{ url_for('chatbot_page', pred_id=pred_id) }}"
+                        class="btn btn-accent btn-lg px-5 rounded-pill shadow-lg" style="transform: scale(1.05);">
+                        <i class="bi bi-chat-dots-fill me-2"></i>Open Explainability Chatbot
+                    </a>
+                </div>
+
+                <!-- Probability Bars -->
+                <div class="row g-4 mt-2 text-start">
+                    <div class="col-md-6">
+                        <div class="prob-bar-container">
+                            <div class="prob-label">
+                                <span style="color: var(--success);"><i class="bi bi-check-circle me-1"></i>Real
+                                    Probability</span>
+                                <span>{{ prob_real }}%</span>
+                            </div>
+                            <div class="prob-bar">
+                                <div class="prob-bar-fill real" style="width: {{ prob_real }}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="prob-bar-container">
+                            <div class="prob-label">
+                                <span style="color: var(--danger);"><i class="bi bi-exclamation-triangle me-1"></i>Fake
+                                    Probability</span>
+                                <span>{{ prob_fake }}%</span>
+                            </div>
+                            <div class="prob-bar">
+                                <div class="prob-bar-fill fake" style="width: {{ prob_fake }}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if result == 'FAKE' and keywords %}
+        <!-- Suspicious Keywords (Explainability Feature) -->
+        <div class="glass-card mt-4 border-danger position-relative overflow-hidden">
+            <div class="position-absolute top-0 start-0 w-100 h-100"
+                style="background: rgba(255, 107, 107, 0.03); pointer-events: none;"></div>
+            <div class="card-header border-danger text-danger bg-transparent font-weight-bold">
+                <i class="bi bi-search me-2"></i>Suspicious Keywords Detected
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3 fs-6">The AI flagged these specific words in the description as highly
+                    indicative of a scam:</p>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for kw in keywords %}
+                    <span class="badge border border-danger text-danger px-3 py-2 fs-6 rounded-pill"
+                        style="background: rgba(255, 107, 107, 0.1);">
+                        <i class="bi bi-tag me-1"></i>{{ kw }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Job Details Card -->
+        <div class="glass-card mt-4 text-start">
+            <div class="card-header">
+                <i class="bi bi-file-text me-2"></i>Analyzed Text Content
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <small class="text-muted text-uppercase fw-bold"
+                            style="font-size: 0.75rem; letter-spacing: 1px;">Job Title</small>
+                        <p class="mb-0 fs-5 text-white">{{ title or '—' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted text-uppercase fw-bold"
+                            style="font-size: 0.75rem; letter-spacing: 1px;">Company</small>
+                        <p class="mb-0 fs-5 text-white">{{ company or '—' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted text-uppercase fw-bold"
+                            style="font-size: 0.75rem; letter-spacing: 1px;">Location</small>
+                        <p class="mb-0 fs-5 text-white">{{ location or '—' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted text-uppercase fw-bold"
+                            style="font-size: 0.75rem; letter-spacing: 1px;">Salary Details</small>
+                        <p class="mb-0 fs-5 text-white">{{ salary or '—' }}</p>
+                    </div>
+                    {% if description %}
+                    <div class="col-12 mt-4 pt-3 border-top" style="border-color: rgba(255,255,255,0.05) !important;">
+                        <small class="text-muted text-uppercase fw-bold mb-2 d-block"
+                            style="font-size: 0.75rem; letter-spacing: 1px;">Full Description Snippet</small>
+                        <div class="p-3 rounded-3"
+                            style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05);">
+                            <p class="mb-0 text-muted" style="font-size: 0.95rem; line-height: 1.8;">{{
+                                description[:800] }}{% if description|length > 800 %}...{% endif %}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-4 d-flex justify-content-center gap-3 flex-wrap">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-glass px-4">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+            <a href="{{ url_for('download_report', pred_id=pred_id) }}" class="btn btn-outline-accent px-4">
+                <i class="bi bi-file-pdf me-2"></i>Download PDF Report
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+</style>
+{% endblock %}

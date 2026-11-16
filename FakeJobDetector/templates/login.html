@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <span class="logo-icon">🛡️</span>
+            <h2>FakeJobDetector</h2>
+            <p>AI-Powered Job Posting Verification</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input type="text" name="username" class="form-control" placeholder="Enter your username" required
+                        autofocus>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input type="password" name="password" class="form-control" placeholder="Enter your password"
+                        required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-accent w-100 mb-3">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+            </button>
+        </form>
+
+        <div class="text-center mt-3">
+            <span class="text-muted">Don't have an account?</span>
+            <a href="{{ url_for('register') }}" class="ms-1">Create one</a>
+        </div>
+
+        <div class="text-center mt-3" style="font-size: 0.75rem; color: var(--text-muted);">
+            <i class="bi bi-shield-check me-1"></i>
+            Default admin: <strong>admin / admin123</strong>
+        </div>
+    </div>
+</div>
+{% endblock %}

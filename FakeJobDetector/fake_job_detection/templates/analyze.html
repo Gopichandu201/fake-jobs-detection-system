@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-3">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-search"></i> Analyze a Job Posting</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('analyze') }}">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="title" class="form-label fw-bold">Job Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required placeholder="e.g. Software Engineer">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="company" class="form-label fw-bold">Company Name</label>
+                            <input type="text" class="form-control" id="company" name="company" placeholder="e.g. Google">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="salary" class="form-label fw-bold">Salary (Optional)</label>
+                        <input type="text" class="form-control" id="salary" name="salary" placeholder="e.g. $100k - $120k">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="description" class="form-label fw-bold">Job Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="6" required placeholder="Paste the full job description here..."></textarea>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">Run Analysis</button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

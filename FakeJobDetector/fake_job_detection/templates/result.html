@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8">
+        <div class="card shadow border-{{ 'danger' if pred.prediction_result == 'Fake' else 'success' }}">
+            <div class="card-header bg-{{ 'danger' if pred.prediction_result == 'Fake' else 'success' }} text-white text-center py-4">
+                <h2 class="mb-0">
+                    Analysis Result: <strong>{{ pred.prediction_result }}</strong>
+                </h2>
+                <p class="mb-0 fs-5">Confidence Score: {{ "%.2f"|format(pred.confidence) }}%</p>
+            </div>
+            <div class="card-body p-4">
+                <h5 class="card-title text-muted mb-4">Job Details Analyzed</h5>
+                
+                <table class="table table-bordered">
+                    <tbody>
+                        <tr>
+                            <th width="30%" class="bg-light">Job Title</th>
+                            <td>{{ pred.title }}</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Company</th>
+                            <td>{{ pred.company or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Salary Listed</th>
+                            <td>{{ pred.salary or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Analyzed On</th>
+                            <td>{{ pred.timestamp }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="mt-4">
+                    <h6 class="fw-bold text-muted">Description Excerpt:</h6>
+                    <div class="p-3 bg-light border rounded text-dark" style="max-height: 200px; overflow-y: auto;">
+                        <small>{{ pred.description }}</small>
+                    </div>
+                </div>
+
+                <div class="mt-4 text-center">
+                    <a href="{{ url_for('analyze') }}" class="btn btn-primary me-2">Analyze Another Job</a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Only show evaluation metrics logic generally on the server level but we can include the confusion matrix here if requested -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">System Integrity Context</h5>
+            </div>
+            <div class="card-body text-center">
+                <p class="text-muted">The AI-Driven Fake Job Posting Detection System uses a Naive Bayes Classifier trained on textual features extracted via TF-IDF Vectorization.</p>
+                <!-- Include confusion matrix image generated during training -->
+                <img src="{{ url_for('static', file='confusion_matrix.png') }}" class="img-fluid border rounded" alt="Model Confusion Matrix" style="max-width: 400px;">
+                <p class="mt-2 mb-0"><small><em>Model Performance Matrix (Generated during latest training)</em></small></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="row align-items-center mb-4">
+        <div class="col-md-6">
+            <h1 class="page-title"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h1>
+            <p class="text-muted">Analyze job postings or upload files for detection.</p>
+        </div>
+        <div class="col-md-6 text-md-end stagger">
+            {% if session['role'] == 'admin' %}
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-accent">
+                <i class="bi bi-shield-lock me-2"></i>Admin Panel
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- ── Main Analysis Form ───────────────────────────────────────── -->
+        <div class="col-lg-8 stagger">
+            <div class="glass-card">
+                <div class="card-header"><i class="bi bi-search me-2"></i>New Job Analysis</div>
+                <div class="card-body">
+                    <form action="{{ url_for('predict') }}" method="POST">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Job Title</label>
+                                <input type="text" class="form-control" name="title" placeholder="e.g. Data Entry Clerk"
+                                    required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Company Name</label>
+                                <input type="text" class="form-control" name="company" placeholder="Optional">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Location</label>
+                                <input type="text" class="form-control" name="location" placeholder="e.g. Remote, NY">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Salary</label>
+                                <input type="text" class="form-control" name="salary"
+                                    placeholder="e.g. $50,000 - $70,000">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Job Description</label>
+                                <textarea class="form-control" name="description" rows="5"
+                                    placeholder="Paste the full job description here..." required></textarea>
+                            </div>
+                            <div class="col-12 mt-4 text-end">
+                                <button type="submit" class="btn btn-accent px-5">
+                                    <i class="bi bi-cpu me-2"></i>Analyze Job
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Sidebar: Upload & Stats ──────────────────────────────────── -->
+        <div class="col-lg-4 stagger">
+            <!-- File Upload Card -->
+            <div class="glass-card mb-4" style="border-top: 3px solid var(--accent-light);">
+                <div class="card-header"><i class="bi bi-cloud-upload me-2"></i>Bulk Upload (.txt)</div>
+                <div class="card-body">
+                    <form action="{{ url_for('upload_file') }}" method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="formFile" class="form-label">Select text file to analyze</label>
+                            <input class="form-control file-input-custom" type="file" id="formFile" name="file"
+                                accept=".txt">
+                        </div>
+                        <button type="submit" class="btn btn-glass w-100">
+                            <i class="bi bi-upload me-2"></i>Upload & Analyze
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Model Metrics Info -->
+            <div class="glass-card mb-4">
+                <div class="card-header"><i class="bi bi-cpu me-2"></i>Model Identity</div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center text-white"
+                            style="border-color: rgba(255,255,255,0.05);">
+                            Algorithm
+                            <span class="badge bg-dark border border-secondary">Naive Bayes</span>
+                        </li>
+                        <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center text-white"
+                            style="border-color: rgba(255,255,255,0.05);">
+                            NLP Feature
+                            <span class="badge bg-dark border border-secondary">TF-IDF</span>
+                        </li>
+                        <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center text-white"
+                            style="border-color: rgba(255,255,255,0.05);">
+                            Current Accuracy
+                            <span class="badge bg-success border border-success">{{ metrics.get('accuracy', 'N/A')
+                                }}%</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Personal Chart -->
+            <div class="glass-card">
+                <div class="card-header"><i class="bi bi-pie-chart me-2"></i>My Predictions</div>
+                <div class="card-body chart-container d-flex justify-content-center">
+                    <canvas id="myStatsChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Prediction History Table ─────────────────────────────────── -->
+    <div class="row stagger">
+        <div class="col-12">
+            <div class="glass-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-clock-history me-2"></i>Recent Analyses</span>
+                    <span class="badge bg-dark border border-secondary" style="font-weight: normal;">{{
+                        predictions|length }} Total</span>
+                </div>
+                <div class="card-body" style="overflow-x: auto;">
+                    {% if predictions %}
+                    <table class="table-dark-custom mb-0">
+                        <thead>
+                            <tr>
+                                <th>Job Title</th>
+                                <th>Company</th>
+                                <th>Verdict</th>
+                                <th>Risk %</th>
+                                <th>Date</th>
+                                <th class="text-center">Explain AI</th>
+                                <th>Report</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in predictions %}
+                            <tr>
+                                <td>{{ p['title'][:40] }}{% if p['title']|length > 40 %}...{% endif %}</td>
+                                <td>{{ p['company'] or '—' }}</td>
+                                <td><span class="result-badge {{ p['result']|lower }}">{{ p['result'] }}</span></td>
+                                <td
+                                    style="color:{% if p['risk_percentage']>50 %}var(--danger){% else %}var(--success){% endif %}">
+                                    {{ "%.1f"|format(p['risk_percentage']) }}%
+                                </td>
+                                <td>{{ p['created_at'][:16] if p['created_at'] else '—' }}</td>
+                                <td class="text-center">
+                                    <a href="{{ url_for('chatbot_page', pred_id=p['id']) }}"
+                                        class="btn btn-sm btn-glass rounded-pill border-accent px-3 py-1"
+                                        style="color: var(--accent-light);">
+                                        <i class="bi bi-robot me-1"></i>Chat
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('download_report', pred_id=p['id']) }}"
+                                        class="btn btn-sm btn-glass" title="Download Report">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-inbox fs-1 text-muted mb-3 d-block"></i>
+                        <p class="text-muted">No predictions found. Start by analyzing a job posting above.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    fetch('/api/stats')
+        .then(r => r.json())
+        .then(data => {
+            new Chart(document.getElementById('myStatsChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Real', 'Fake'],
+                    datasets: [{
+                        data: [data.total_real, data.total_fake],
+                        backgroundColor: ['#00d2a0', '#ff6b6b'],
+                        borderWidth: 0,
+                        borderRadius: 4,
+                        spacing: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#a0a0b0', padding: 15 } }
+                    },
+                    cutout: '65%'
+                }
+            });
+        });
+</script>
+{% endblock %}

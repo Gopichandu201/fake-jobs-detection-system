@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1><i class="bi bi-speedometer2 me-2"></i>Admin Dashboard</h1>
+        <p>System overview, analytics, and user management</p>
+    </div>
+
+    <!-- ── Stats Cards ──────────────────────────────────────────────── -->
+    <div class="row g-4 stagger mb-4">
+        <div class="col-md-3 col-6">
+            <div class="stat-card stat-total">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value">{{ total_predictions }}</div>
+                <div class="stat-label">Total Analyses</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card stat-real">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value">{{ total_real }}</div>
+                <div class="stat-label">Real Jobs</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card stat-fake">
+                <div class="stat-icon">🚨</div>
+                <div class="stat-value">{{ total_fake }}</div>
+                <div class="stat-label">Fake Jobs</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card stat-users">
+                <div class="stat-icon">👥</div>
+                <div class="stat-value">{{ total_users }}</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Charts Row ───────────────────────────────────────────────── -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="glass-card h-100">
+                <div class="card-header"><i class="bi bi-pie-chart me-2"></i>Real vs Fake Distribution</div>
+                <div class="card-body chart-container">
+                    <canvas id="pieChart" height="260"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="glass-card h-100">
+                <div class="card-header"><i class="bi bi-grid-3x3 me-2"></i>Model Confusion Matrix</div>
+                <div class="card-body text-center d-flex align-items-center justify-content-center">
+                    <img src="{{ url_for('static', filename='img/confusion_matrix.png') }}"
+                        class="img-fluid rounded shadow-sm border"
+                        style="max-height: 240px; border-color: var(--border) !important;" alt="Confusion Matrix"
+                        onerror="this.onerror=null; this.src=''; this.alt='Confusion Matrix Image Not Found (Run train_model.py)';">
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="glass-card h-100">
+                <div class="card-header"><i class="bi bi-trophy me-2"></i>Model Accuracy</div>
+                <div class="card-body">
+                    {% if metrics %}
+                    <div class="text-center mb-3">
+                        <div class="metric-ring"
+                            style="--percent: {{ metrics.get('accuracy', 0) }}%; width: 140px; height: 140px;">
+                            <span class="metric-value" style="font-size: 2rem;">{{ metrics.get('accuracy', 'N/A')
+                                }}%</span>
+                        </div>
+                        <div class="metric-label mt-2">Overall Accuracy</div>
+                    </div>
+                    <div class="row g-2 text-center mt-3">
+                        <div class="col-4">
+                            <div style="font-size: 1.2rem; font-weight: 800; color: var(--accent-light);">{{
+                                metrics.get('precision', 'N/A') }}%</div>
+                            <div class="metric-label">Precision</div>
+                        </div>
+                        <div class="col-4">
+                            <div style="font-size: 1.2rem; font-weight: 800; color: var(--success);">{{
+                                metrics.get('recall', 'N/A') }}%</div>
+                            <div class="metric-label">Recall</div>
+                        </div>
+                        <div class="col-4">
+                            <div style="font-size: 1.2rem; font-weight: 800; color: var(--warning);">{{
+                                metrics.get('f1_score', 'N/A') }}%</div>
+                            <div class="metric-label">F1-Score</div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted py-4">No model metrics available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Trend Chart ──────────────────────────────────────────────── -->
+    <div class="glass-card mb-4">
+        <div class="card-header"><i class="bi bi-graph-up me-2"></i>Detection Trend Over Time</div>
+        <div class="card-body chart-container">
+            <canvas id="lineChart" height="100"></canvas>
+        </div>
+    </div>
+
+    <!-- ── All Predictions Table ────────────────────────────────────── -->
+    <div class="glass-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-table me-2"></i>All Predictions</span>
+            <span class="result-badge real" style="font-size: 0.75rem;">{{ predictions|length }} records</span>
+        </div>
+        <div class="card-body" style="overflow-x: auto;">
+            {% if predictions %}
+            <table class="table-dark-custom">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>User</th>
+                        <th>Job Title</th>
+                        <th>Result</th>
+                        <th>Confidence</th>
+                        <th>Risk %</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in predictions %}
+                    <tr>
+                        <td>{{ p['id'] }}</td>
+                        <td><i class="bi bi-person-circle me-1"></i>{{ p['username'] }}</td>
+                        <td>{{ p['title'][:35] }}{% if p['title']|length > 35 %}...{% endif %}</td>
+                        <td><span class="result-badge {{ p['result']|lower }}">{{ p['result'] }}</span></td>
+                        <td>{{ "%.1f"|format(p['confidence']) }}%</td>
+                        <td
+                            style="color:{% if p['risk_percentage']>50 %}var(--danger){% else %}var(--success){% endif %}">
+                            {{ "%.1f"|format(p['risk_percentage']) }}%</td>
+                        <td style="white-space: nowrap;">{{ p['created_at'][:16] if p['created_at'] else '—' }}</td>
+                        <td>
+                            <a href="{{ url_for('download_report', pred_id=p['id']) }}"
+                                class="btn btn-glass btn-sm me-1" title="Download PDF">
+                                <i class="bi bi-file-pdf"></i>
+                            </a>
+                            <a href="{{ url_for('delete_prediction', pred_id=p['id']) }}" class="btn btn-glass btn-sm"
+                                title="Delete" onclick="return confirm('Delete this prediction?');"
+                                style="color: var(--danger);">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-center text-muted py-3">No predictions yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ── Users Table ──────────────────────────────────────────────── -->
+    <div class="glass-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-people me-2"></i>Registered Users</span>
+            <span class="result-badge real" style="font-size: 0.75rem;">{{ users|length }} users</span>
+        </div>
+        <div class="card-body" style="overflow-x: auto;">
+            <table class="table-dark-custom">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Joined</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td>{{ u['id'] }}</td>
+                        <td><i class="bi bi-person-circle me-1"></i>{{ u['username'] }}</td>
+                        <td>{{ u['email'] or '—' }}</td>
+                        <td><span class="result-badge {% if u['role'] == 'admin' %}real{% else %}{% endif %}">{{
+                                u['role']|upper }}</span></td>
+                        <td>{{ u['created_at'][:16] if u['created_at'] else '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    fetch('/api/stats')
+        .then(r => r.json())
+        .then(data => {
+            // Pie Chart
+            new Chart(document.getElementById('pieChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Real Jobs', 'Fake Jobs'],
+                    datasets: [{
+                        data: [data.total_real, data.total_fake],
+                        backgroundColor: ['#00d2a0', '#ff6b6b'],
+                        borderWidth: 0,
+                        borderRadius: 4,
+                        spacing: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#a0a0b0', padding: 15 } }
+                    },
+                    cutout: '60%'
+                }
+            });
+
+            // Line Chart
+            new Chart(document.getElementById('lineChart'), {
+                type: 'line',
+                data: {
+                    labels: data.daily_labels,
+                    datasets: [
+                        {
+                            label: 'Real',
+                            data: data.daily_real,
+                            borderColor: '#00d2a0',
+                            backgroundColor: 'rgba(0, 210, 160, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#00d2a0'
+                        },
+                        {
+                            label: 'Fake',
+                            data: data.daily_fake,
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#ff6b6b'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: '#a0a0b0', padding: 15 } }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#a0a0b0' }
+                        },
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            ticks: { color: '#a0a0b0', maxTicksLimit: 10 }
+                        }
+                    }
+                }
+            });
+        });
+</script>
+{% endblock %}
